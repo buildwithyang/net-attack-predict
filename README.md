@@ -25,7 +25,7 @@ in Jupyter or VS Code and run all cells. It reads `data/raw/rt-iot2022.zip` dire
 | 2 | stratified train / validation / test split, 70 / 15 / 15, seed 42 |
 | 3 | **data processing**: which training rows (all / a share / undersample attacks), which features (all / drop constant / drop proto + service / drop named columns), scaling (standard / minmax / robust / log + standard / none) |
 | 4 | **model**: the MLP (hidden layers, activation, dropout) |
-| 5 | **training**: optimizers with their own settings (sgd: momentum, nesterov · adam / adamw: beta1, beta2 · rmsprop: alpha, momentum · adagrad), hand-written training loop with early stopping |
+| 5 | **training**: the three optimizers from class with their own settings (sgd · sgd + momentum: momentum · adam: beta1, beta2), hand-written training loop with early stopping |
 | 6 | test: detection rate, false alarm rate, confusion matrix |
 | 7 | one experiment = Steps 3 → 6; runs the baseline |
 | 8 | **experiment panel** with Data / Model / Training tabs (the optimizer's own settings appear when you pick it), results table, compare chart |

@@ -44,11 +44,10 @@
     - 缩放：standard、minmax、robust、log + standard、none；
     - 以上都只在 train 上学习。
   - Step 4 模型：隐藏层、激活函数（relu、leaky_relu、tanh、sigmoid）、dropout。
-  - Step 5 训练：每个 optimizer 有自己的参数：
-    - sgd：momentum、nesterov；
-    - adam、adamw：beta1、beta2；
-    - rmsprop：alpha、momentum；
-    - adagrad：无。
+  - Step 5 训练：只保留课上讲过的三个 optimizer（用户 2026-10-18 决定）。每个都有自己的参数，在 Step 5a 用 Colab 下拉菜单设置初始值：
+    - sgd：没有额外参数；
+    - sgd + momentum：momentum，默认 0.9；
+    - adam：beta1、beta2。
     - 通用参数：lr、weight decay、batch size、max epochs、patience。训练循环是手写的。
   - Step 6：测试集混淆矩阵。
   - Step 7：`run_experiment` 依次执行 Step 3–6，并跑一次 baseline。
@@ -67,7 +66,7 @@
   - **Adam**：只在 week2/lesson3 的 AI 总结里提到（`01:18:55`，CNN 课，Keras 演示），没有转写可以核对。
   - 讲义第 36 页：`Remedies (Week 3): Several random restarts, momentum and adaptive optimisers.`
 - **没找到**：RMSprop、Adagrad、AdamW、Nesterov 在课件、讲义、实验和转写里都没有出现。只在 Agent 写的 `../week1/lesson2/questions.md`（Q003）里出现过。
-- **建议**：报告主线讲 SGD、SGD + momentum、Adam；其他 optimizer 作为补充对比，并注明不是课上内容。
+- **决定（用户 2026-10-18）**：notebook 只保留 SGD、SGD + momentum、Adam。RMSprop、Adagrad、AdamW、Nesterov 已删除。
 
 ### 实验设计（Step 9）
 
@@ -84,7 +83,8 @@
 - **Training**：
   - Adam 的 lr 取 0.00001 时误报 35%，取 0.1 时 val loss 来回跳；
   - SGD 在 lr 0.001 时误报 35%；lr 0.01 加 momentum 0.9 后 val loss 0.017；lr 0.1 加 momentum 0.9 后 0.0096；
-  - rmsprop 和 Adam 差不多；Adam 的 beta2 改成 0.9 后变差；adagrad 的步长会越来越小。
+  - 三个 optimizer 各用常用的 lr 时，best val loss 分别是：sgd（lr 0.1）0.017，sgd + momentum（lr 0.01）0.017，adam（lr 0.001）0.0076；
+  - Adam 的 beta2 改成 0.9 后变差（0.0117）。
 - **过拟合（三页一起改）**：只用 1% 训练行（826 行）、网络 [256, 128]、150 轮、patience 0：
   - val loss 第 7 轮最低（0.106），之后升到 0.31；
   - patience 5 能保住第 7 轮的权重；weight decay 0.01 效果最好（最后 0.12）；dropout 帮助很小；把训练行增加到 10% 最有效。
