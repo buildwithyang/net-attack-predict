@@ -59,6 +59,16 @@
 - baseline（隐藏层 64、标准化、Adam lr 0.001、batch 256、最多 30 轮、early stopping 5）的实测结果：best val loss 0.0076，攻击检出 99.84%，误报 1.28%。环境是本机 CPU，2026-10-18。
 - 本机执行过整份 notebook，Step 9 列的实验也全部跑过，数字都是实测值。**未在 Colab 上实测**。用户在 Colab 上跑旧版代码时，末位数字和本机略有不同，**推断**是 CPU 和 torch 版本不同造成的。
 
+### 课上讲过哪些 optimizer（2026-10-18 查课程资料）
+
+- **原文**：
+  - **梯度下降 + 学习率**：讲义 `../week1/lesson3/CSIP5103D_feedforward_networks.pdf` 第 37 页，公式 `w ← w − η·∂E/∂w`；反向传播的 `Δw = η δ o` 在第 38–40 页。
+  - **momentum（动量率）**：week1/lesson3 转写 `01:12:00`；week1/lesson3 总结 `00:51:46`；week2/lesson1 总结 `00:04:36`。
+  - **Adam**：只在 week2/lesson3 的 AI 总结里提到（`01:18:55`，CNN 课，Keras 演示），没有转写可以核对。
+  - 讲义第 36 页：`Remedies (Week 3): Several random restarts, momentum and adaptive optimisers.`
+- **没找到**：RMSprop、Adagrad、AdamW、Nesterov 在课件、讲义、实验和转写里都没有出现。只在 Agent 写的 `../week1/lesson2/questions.md`（Q003）里出现过。
+- **建议**：报告主线讲 SGD、SGD + momentum、Adam；其他 optimizer 作为补充对比，并注明不是课上内容。
+
 ### 实验设计（Step 9）
 
 按面板三页分组，每次只在 baseline 上改一处。数字是本机单个 seed 的实测值，完整表格见 notebook Step 9。
