@@ -1,8 +1,5 @@
 # Generated: can always be rebuilt, so never commit it
-runs/
 data/raw/*.csv
 __pycache__/
-*.egg-info/
-.pytest_cache/
+.ipynb_checkpoints/
 .DS_Store
-.venv/

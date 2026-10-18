@@ -1,6 +1,6 @@
 # net-attack-predict —— 小组项目：物联网网络攻击检测
 
-领域：study / DMU ｜ 状态：代码完成；实验结果已清空，待重新跑 ｜ 最后更新：2026-10-18
+领域：study / DMU ｜ 状态：单个 notebook 完成，本机已跑通，Colab 未实测 ｜ 最后更新：2026-10-18
 
 本课程（CSIP5103 / CSIP5103D）的小组项目。考核比重、硬要求和日期以上级目录的 [assessment.md](../assessment.md) 为准，本文件只记本项目自己的决定。
 
@@ -18,81 +18,59 @@
 
 来源：用户 2026-10-16 提供的早先讨论，只存本摘要，原文不入库。
 
-## 实现方案（用户 2026-10-17 确认）
+## 实现方案
 
+**2026-10-18 改为只用一个 notebook（用户决定）**：项目只剩 5 天左右，有组员没有编程经验，要精简、紧扣课堂内容，让每个人打开 notebook 就能看懂数据处理、训练、验证、调优的全过程。用户要求删掉其他代码和产物，所以下面这些都已删除：
+- `src/iotids` 模块库（含 Seam / Adapter 设计）、`scripts/`、`tests/`、`configs/`；
+- `notebooks/playground.ipynb`、双击启动器、`pyproject.toml`；
+- 生成的 `runs/`、解压出的 CSV。
+
+它们都还在 git 历史里，最后一个包含它们的提交是 `dc6a350`。原先 2026-10-17 定的「数据模块拆 Seam 给组员分头改」「每个实验一份配置文件」作废。
+
+仍然有效的决定（用户 2026-10-17 确认）：
 - **只做二分类：判断一条流量记录是不是攻击**。主要目的是掌握训练的整个流程。
-- 评估只讲训练曲线、混淆矩阵、攻击检出率和正常误报率。按攻击类型拆分和类别不平衡实验是补充材料，不作为主线。
-- 对比实验围绕训练流程：标准化、学习率、网络大小、过拟合与 early stopping / dropout。配置在 `configs/training/`。
-- **框架用 PyTorch，训练循环自己写**，不用 Lightning、skorch 这类封装。学习目标是框架和实战，不做 numpy 手写版。
-- 模型只接触数字矩阵 `X, y`，不知道 CSV。
-- 数据模块必须拆好 Seam，并配好文档和注释：后期会由其他组员实现和调试不同的清洗（去掉干扰特征）、标准化等方案来对比效果。
+- 评估只讲训练曲线、混淆矩阵、攻击检出率和正常误报率。
+- **框架用 PyTorch，训练循环自己写**，不用 Lightning、skorch 这类封装。
 - 评估必须图形化，老师一看就明白。
-- 每个实验是一份配置文件，只改其中一节；`seed` 和 `data.split` 不变，保证测试集相同（看 `metrics.json` 里的 `test_fingerprint`）。
 
-代码结构、各模块的 Interface、怎么加新的 Adapter，见 [README.md](README.md)。
+### notebook：`notebooks/iot_attack_detection.ipynb`
 
-### 实验设计
+- **自包含**：所有代码都在 notebook 里，约 200 行。在 Colab 里 *Runtime → Run all* 就能跑，没有本地数据时会自己从 GitHub 下载压缩包。Colab 链接见 [README.md](README.md)。
+- 按 Step 0–9 组织，每一步注明对应哪节课（week1 感知机 / 反向传播，week2 泛化、过拟合、early stopping、dropout、归一化）：
+  - Step 1–3：读数据、清洗、划分 70/15/15（按 Attack_type 分层，seed 42）、one-hot 和缩放（缩放只在 train 上 fit）；
+  - Step 4–6：MLP、手写训练循环（含 early stopping）、测试集混淆矩阵；
+  - Step 7：用 Colab 表单（`# @param`）调 12 个设置；
+  - Step 8：对比各次运行；
+  - Step 9：推荐实验，附实测数字。
+- baseline（隐藏层 64、标准化、Adam lr 0.001、batch 256、最多 30 轮、early stopping 5）的实测结果：best val loss 0.0076，攻击检出 99.84%，误报 1.28%。环境是本机 CPU，2026-10-18。
+- 本机执行过整份 notebook，Step 9 列的实验也全部跑过，数字都是实测值。**未在 Colab 上实测**。用户在 Colab 上跑旧版代码时，末位数字和本机略有不同，**推断**是 CPU 和 torch 版本不同造成的。
 
-主线（`configs/training/`），每组只比 baseline 改一处：
+### 实验设计（Step 9）
 
-| 组 | 配置 | 改了什么 |
+每组只在 baseline 上改一处，可以一人认领一组，作为个人贡献：
+
+| 组 | 改什么 | 实测要点（本机，单个 seed） |
 | --- | --- | --- |
-| 基线 | `baseline` | 隐藏层 [64]，标准化，lr 0.001，early stopping 5，阈值 0.5 |
-| 标准化 | `scale_none` | 不做标准化 |
-| 学习率 | `lr_high`、`lr_low` | lr 0.1 / 0.00001 |
-| 网络大小 | `hidden_8`、`hidden_128_64` | 隐藏层 [8] / [128, 64] |
-| 过拟合 | `long_no_early_stop`、`long_no_early_stop_dropout` | 100 轮、关掉 early stopping，后者再加 dropout 0.3 |
+| A 标准化 | `scaling`: none / standard / log + standard | 不缩放时第一轮 train loss 约 45,000；log + standard 最好（val loss 0.0058） |
+| B 学习率 | 0.00001 … 0.1 | 0.00001 太慢（误报 35%）；0.1 时 val loss 来回跳（误报 16%） |
+| C 优化器 | sgd / sgd + momentum / adam | lr 0.001 下 SGD 误报 35%，Adam 1.3%；SGD 把 lr 调到 0.1 后误报 2.1% |
+| D 网络大小 | 无隐藏层 / 8 / 64 / 128, 64 | 无隐藏层误报 7.5%；[128, 64] 误报 0.8% |
+| E 过拟合 | 1% 训练行，网络 [256, 128]，150 轮，关掉 early stopping | val loss 第 7 轮最低（0.090），之后升到 0.34；early stopping 回到第 7 轮的权重；weight decay 0.01 最有效（0.075）；dropout 只有一点帮助 |
+| F 梯度消失（补充） | 4 层 sigmoid + SGD | loss 一直卡在 0.33，所有流量都判成攻击 |
 
-关掉 early stopping 时，模型保留**最后一轮**的权重，这样能看到过拟合对测试结果的影响。
+结果写进报告时：原文（实验数字）、推断、建议分开写；只跑一个 seed 时，差几行的结果要注明「可能是随机波动」；结论对应 week2/lesson2 的泛化、过拟合、正则化。
 
-补充（`configs/imbalance/`）：训练集欠采样、损失函数类别权重、按验证集误报率选阈值。
+### 数据问题（写代码时发现）
 
-结果写进本文件时：原文（实验数字）、推断、建议分开写；只跑一个 seed 时，差几行的结果要注明「可能是随机波动」；结论对应 week2/lesson2 的泛化、过拟合、正则化。
-
-### 写代码时发现的数据问题
-
-- `no` 列在每个攻击类型里从 0 重新计数（CSV 按类型排序），不是唯一编号，已丢弃，改用 CSV 行号作 id。
+- `no` 列在每个攻击类型里从 0 重新计数（CSV 按类型排序），不是唯一编号，已丢弃。
 - 去掉 `no` 后有 5,195 行完全重复，划分前去重，剩 117,922 行。另有 7 行特征相同但标签不同，保留。
-- 标签末尾带 `\r`；`bwd_URG_flag_count` 是常数列；部分特征最大值约 2e10，所以准备了 `log_standard` 标准化方案。
+- 标签末尾带 `\r`；部分特征最大值约 2e10（例如 `flow_iat.tot`），所以提供了 `log + standard` 缩放。
 
 ### 运行环境
 
-- 虚拟环境在 `~/.venvs/dmu-project1`（资料库外，避免依赖被同步上云）。只用 CPU。
-- 本项目已用 `pip install -e ".[dev]"` 以可编辑方式装进该环境（2026-10-18）。在项目根目录运行：`~/.venvs/dmu-project1/bin/python -B scripts/train.py configs/baseline.yaml`；测试直接 `pytest`。VS Code 终端已设好 `PYTHONDONTWRITEBYTECODE` 和 `MPLCONFIGDIR`，避免在同步目录里生成缓存。
-- 依赖写在 `pyproject.toml`，版本下限按 Colab 能满足的写。
+- Colab：直接打开即可，CPU 就够用。
+- 本机：虚拟环境在 `~/.venvs/dmu-project1`（资料库外，避免依赖被同步上云），用 VS Code 或 Jupyter 打开 notebook。2026-10-18 已从该环境卸载旧的 `iotids` 包。
 - 不要两台机器同时跑本项目：同步时文件正被改写会产生 `.conflict1/.conflict2` 副本。
-- 2026-10-18 加了给没编程经验的组员用的启动器：双击 `start.command`（macOS）或 `start.bat`（Windows），代码在 `scripts/start.py`。它在项目根目录建 `.venv/`、装依赖、解压数据，再用菜单选实验、对比、自检。`.venv/` 已写进 `.gitignore`。**Drive 里这份副本不要用启动器**，否则 `.venv`（含 torch，几百 MB）会被同步上云；本机继续用 `~/.venvs/dmu-project1`。组员从 GitHub clone 后再用。
-
-### 精简版 notebook（2026-10-18，主用）
-
-- 用户要求：项目只剩 5 天左右，有组员没有编程经验。要精简、紧扣课堂内容，让每个人打开 notebook 就能看懂数据处理、训练、验证、调优的全过程。
-- `notebooks/iot_attack_detection.ipynb`：**自包含**，不 import `src/`，约 200 行代码，按 Step 0–9 组织：
-  - 数据部分：读数据、清洗、划分、one-hot 和缩放；
-  - 模型与评估：MLP、手写训练循环（含 early stopping）、混淆矩阵；
-  - 实验与对比：Step 7 用 Colab 表单（`# @param`）调 12 个设置，Step 8 对比各次运行，Step 9 是推荐实验和实测数字。
-  - 每一步都注明对应哪节课（week1 感知机 / 反向传播，week2 泛化、过拟合、early stopping、dropout、归一化）。
-- 数据：先找项目里的 `data/raw/rt-iot2022.zip`，没有就从 GitHub 下载。清洗和划分方式与 `src/iotids` 一致：去重后 117,922 行，按 Attack_type 分层 70/15/15，seed 42。
-- 结果数字和 `src/iotids` 不完全一样：每轮打乱数据的方式不同，one-hot 的做法也不同。baseline 实测：best val loss 0.0076，攻击检出 99.84%，误报 1.28%（本机 CPU，2026-10-18）。
-- 本机执行过整份 notebook，并跑了 Step 9 列出的全部实验，数字都是实测值。**未在 Colab 上实测。**
-- **建议**：小组提交和 demo 用这一份。`src/iotids` 和 `playground.ipynb` 作为进阶 / 备份，是否保留待用户决定。
-
-### 交互式 notebook（2026-10-18）
-
-- `notebooks/playground.ipynb`：用滑块调数据处理、网络、optimizer 和训练参数，点 Train 后实时看 train / val loss 曲线，并给出测试集结果（四张图和 `summary.png` 相同）。另外可以对比多次运行、对单个参数做 sweep，还附带一份「引导实验」清单。用户要求：Colab 能跑，能交互式调超参数和 optimizer，看到效果。
-- notebook 不另写模型或训练循环，直接调用 `src/iotids`。同配置、同 seed 和命令行结果一致：本机核对过 baseline，测试集 fp=20、fn=33，与 `runs/baseline/metrics.json` 相同。
-- 为此给库加了以下功能，旧配置照常能用：
-  - `train.optimizer` 新增 `adamw`、`rmsprop`、`adagrad`；
-  - 新增可选的 `train.momentum`（sgd、rmsprop）和 `train.weight_decay`；
-  - `fit(..., on_epoch=...)` 回调，用来画实时曲线；
-  - `data.sampler` 新增 `{name: subsample, fraction: 0.01}`，只用一部分训练行，用来故意做出过拟合。
-  - 对应测试共 19 个，全部通过。
-- Colab 里的 setup 单元会从 GitHub clone 仓库，所以 Colab 徽章和 clone 都要等这些改动 push 之后才生效。
-- 引导实验里的数字来自 2026-10-18 本机 CPU、seed 42 的单次运行。**推断**：换机器或换 torch 版本，末位可能不同。几个值得写进报告的观察（原文数字见 notebook 第 6 节）：
-  - 不做标准化时，第一轮 train loss 约 44,000；
-  - SGD 在 lr 0.001 下 30 轮后误报 35%，而 Adam 只有 1.1%；
-  - 全量数据下这个 MLP 几乎不过拟合；只用 1%（828 行）训练、网络取 [256, 128] 时，val loss 在第 20 轮最低（0.066），之后升到 0.25；
-  - 在这个设置下，weight decay 0.01 能把最后的 val loss 压到 0.077，dropout 0.3 / 0.5 几乎没用；
-  - 4 层 sigmoid + SGD 时 loss 卡在 0.33，模型把所有流量都判成攻击。
 
 ## 为什么可以不用 KDD
 
@@ -107,7 +85,7 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 ## 数据集
 
 - **RT-IoT2022**，Kaggle：<https://www.kaggle.com/datasets/supplejade/rt-iot2022real-time-internet-of-things>，2026-10-16 下载。
-- `data/raw/rt-iot2022.zip`（← 原 `data/rt-iot2022.zip`，2026-10-18 按标准目录移入 `raw/`）：原始压缩包，3.8 MB。解压得到 `data/raw/RT_IOT2022.csv`（55 MB，123,117 行不含表头，85 列；第一列 `no` 是行号，最后一列 `Attack_type` 是标签，其余是流量特征）。2026-10-18 按用户要求删除了解压出的 CSV，用前先 `unzip data/raw/rt-iot2022.zip -d data/raw/`。
+- `data/raw/rt-iot2022.zip`（← 原 `data/rt-iot2022.zip`，2026-10-18 按标准目录移入 `raw/`）：原始压缩包，3.8 MB。解压得到 `data/raw/RT_IOT2022.csv`（55 MB，123,117 行不含表头，85 列；第一列 `no` 是行号，最后一列 `Attack_type` 是标签，其余是流量特征）。notebook 直接读压缩包，不需要解压。
 
 各标签行数（2026-10-16 统计）：
 
@@ -153,16 +131,13 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 
 - 组员名单。
 - 正常 / 攻击标签的归类（见上方推断）。
-- 交给老师的代码形式：assessment.md 推断 Colab `.ipynb` 最贴合老师习惯。现在已有调用模块的 `notebooks/playground.ipynb`（交互式），是否直接作为提交形式待定。
+- 交给老师的代码形式：assessment.md 推断 Colab `.ipynb` 最贴合老师习惯。**建议**直接提交 `notebooks/iot_attack_detection.ipynb`，待用户确认。
 
 ## 文件
 
-2026-10-18 按 Python 机器学习项目常用的 src 布局整理（用户要求），代码从 `code/` 提到项目根目录。每个目录的作用见 [README.md](README.md) 的 "Project layout"。
-
-- `README.md`、`pyproject.toml`、`configs/`、`src/iotids/`、`scripts/`、`tests/` —— 代码部分（标准布局）
-- `notebooks/playground.ipynb` —— 交互式调参 notebook（Colab / Jupyter），见上方「交互式 notebook」
-- `data/raw/rt-iot2022.zip` —— 数据集原始压缩包（原样保留）；解压出的 CSV 可以随时重建
-- `runs/<name>/` —— 每个实验的结果和图表，由 `scripts/train.py` 生成（目前已清空）
-- `.gitignore` —— 列出可重新生成、不该提交的文件
-- `.vscode/settings.json` —— VS Code 配置：解释器指向 `~/.venvs/dmu-project1`，让 `iotids`、`torch` 等可以点击跳转
+- `notebooks/iot_attack_detection.ipynb` —— 整个项目的代码（上面的「notebook」）
+- `data/raw/rt-iot2022.zip` —— 数据集原始压缩包（原样保留）。notebook 在 Colab 里从 GitHub 下载的就是这个文件，不要删除或改名
+- `README.md` —— 给组员和老师看的英文说明
+- `.gitignore` —— 不该提交的文件
+- `.vscode/settings.json` —— VS Code 配置：解释器指向 `~/.venvs/dmu-project1`，终端不在同步目录里生成缓存
 - `PROJECT.md`、`sources/` —— 资料库约定：项目决定记录，课程原件（`sources/NNS_report_instruction.docx`，2026-10-17 存入）
