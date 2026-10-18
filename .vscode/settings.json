@@ -1,0 +1,24 @@
+{
+  // 解释器：资料库外的虚拟环境，Pylance 靠它找到 torch、numpy、pandas 等，Cmd+点击才能跳进去
+  "python.defaultInterpreterPath": "${userHome}/.venvs/dmu-project1/bin/python",
+  // 代码在 src/ 下（src 布局），让 `from iotids.xxx import ...` 可以跳转
+  "python.analysis.extraPaths": ["src"],
+
+  // 测试面板：测试目录和参数读 pyproject.toml 的 [tool.pytest.ini_options]
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.cwd": "${workspaceFolder}",
+  "python.envFile": "${workspaceFolder}/.vscode/.env",
+
+  // 终端：不在同步目录里生成 __pycache__，matplotlib 缓存放到 /private/tmp
+  "terminal.integrated.env.osx": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "MPLCONFIGDIR": "/private/tmp/dmu-project1-matplotlib"
+  },
+
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/*.egg-info": true
+  }
+}

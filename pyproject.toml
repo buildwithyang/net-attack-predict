@@ -1,0 +1,33 @@
+# Project metadata, dependencies and tool settings in one file (PEP 621).
+# Install once, from the project root:   pip install -e ".[dev]"
+# -e (editable) means `import iotids` uses the code in src/ directly, so edits take effect without reinstalling.
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iotids"
+version = "0.1.0"
+description = "IoT network attack detection with a PyTorch MLP (RT-IoT2022)"
+requires-python = ">=3.10"
+# Lower bounds that Google Colab already satisfies.
+dependencies = [
+    "torch>=2.0",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scikit-learn>=1.2",
+    "matplotlib>=3.7",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]                # tests also work before `pip install -e .`
+addopts = "-q -p no:cacheprovider"  # no .pytest_cache in the synced folder

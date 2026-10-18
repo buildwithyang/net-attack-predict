@@ -1,0 +1,31 @@
+# Baseline experiment (the MVP).
+# For a new experiment: copy this file, change `name`, and change ONE section.
+# Keep `seed` and `data.split` the same, so every experiment uses the same test set
+# (check `test_fingerprint` in runs/<name>/metrics.json).
+
+name: baseline
+seed: 42
+
+data:
+  path: data/raw/RT_IOT2022.csv # relative to the project root
+  split: [0.7, 0.15, 0.15]      # train / val / test, stratified by Attack_type
+  features: all                 # all | drop_constant | {name: drop, columns: [proto, service]}
+  scaler: standard              # none | standard | minmax | robust | log_standard
+  sampler: none                 # none | {name: undersample, ratio: 1.0}   (train set only)
+
+model:
+  hidden: [64]                  # hidden layer sizes, e.g. [128, 64]
+  activation: relu              # relu | tanh | sigmoid | leaky_relu
+  dropout: 0.0
+
+train:
+  epochs: 30
+  batch_size: 256
+  optimizer: adam               # adam | sgd
+  lr: 0.001
+  class_weight: none            # none | balanced | a number (weight of the attack class)
+  early_stopping: 5             # stop after 5 epochs without a better val loss; 0 = off
+
+decision:
+  name: fixed                   # fixed {value} | max_fpr {fpr}: pick threshold on val
+  value: 0.5
