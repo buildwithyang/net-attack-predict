@@ -37,26 +37,47 @@
 
 - **自包含**：所有代码都在 notebook 里，约 200 行。在 Colab 里 *Runtime → Run all* 就能跑，没有本地数据时会自己从 GitHub 下载压缩包。Colab 链接见 [README.md](README.md)。
 - 按 Step 0–9 组织，每一步注明对应哪节课（week1 感知机 / 反向传播，week2 泛化、过拟合、early stopping、dropout、归一化）：
-  - Step 1–3：读数据、清洗、划分 70/15/15（按 Attack_type 分层，seed 42）、one-hot 和缩放（缩放只在 train 上 fit）；
-  - Step 4–6：MLP、手写训练循环（含 early stopping）、测试集混淆矩阵；
-  - Step 7：用 Colab 表单（`# @param`）调 12 个设置；
-  - Step 8：对比各次运行；
-  - Step 9：推荐实验，附实测数字。
+  - Step 1–2：读数据、清洗、划分 70/15/15（按 Attack_type 分层，seed 42）；
+  - Step 3 数据处理：
+    - 训练行：全部 / 50%、10%、5%、1% / 把攻击欠采样到 1:1；
+    - 特征：全部 / 去掉常数列 / 去掉 proto 和 service / 手动输入要去掉的列；
+    - 缩放：standard、minmax、robust、log + standard、none；
+    - 以上都只在 train 上学习。
+  - Step 4 模型：隐藏层、激活函数（relu、leaky_relu、tanh、sigmoid）、dropout。
+  - Step 5 训练：每个 optimizer 有自己的参数：
+    - sgd：momentum、nesterov；
+    - adam、adamw：beta1、beta2；
+    - rmsprop：alpha、momentum；
+    - adagrad：无。
+    - 通用参数：lr、weight decay、batch size、max epochs、patience。训练循环是手写的。
+  - Step 6：测试集混淆矩阵。
+  - Step 7：`run_experiment` 依次执行 Step 3–6，并跑一次 baseline。
+  - Step 8 实验面板（ipywidgets，代码默认折叠）：Data、Model、Training 三页，选哪个 optimizer 就出现它自己的参数；下方是结果表和对比图。
+  - Step 9：按三页分组的推荐实验，附实测数字。
+- 分工（用户 2026-10-18）：Data 页给研究数据处理的同学，Model 页给同学 2，Training 页（optimizer 和调参）由用户本人负责。组员名单仍待补。
+- 2026-10-18 起不再用 Colab 表单（`# @param`），原因有两个：表单把下拉选项 `0.0` / `1.0` 显示成 `0` / `1`，和默认值对不上而报错；表单也做不到「选了哪个 optimizer 才显示它的参数」。
 - baseline（隐藏层 64、标准化、Adam lr 0.001、batch 256、最多 30 轮、early stopping 5）的实测结果：best val loss 0.0076，攻击检出 99.84%，误报 1.28%。环境是本机 CPU，2026-10-18。
 - 本机执行过整份 notebook，Step 9 列的实验也全部跑过，数字都是实测值。**未在 Colab 上实测**。用户在 Colab 上跑旧版代码时，末位数字和本机略有不同，**推断**是 CPU 和 torch 版本不同造成的。
 
 ### 实验设计（Step 9）
 
-每组只在 baseline 上改一处，可以一人认领一组，作为个人贡献：
-
-| 组 | 改什么 | 实测要点（本机，单个 seed） |
-| --- | --- | --- |
-| A 标准化 | `scaling`: none / standard / log + standard | 不缩放时第一轮 train loss 约 45,000；log + standard 最好（val loss 0.0058） |
-| B 学习率 | 0.00001 … 0.1 | 0.00001 太慢（误报 35%）；0.1 时 val loss 来回跳（误报 16%） |
-| C 优化器 | sgd / sgd + momentum / adam | lr 0.001 下 SGD 误报 35%，Adam 1.3%；SGD 把 lr 调到 0.1 后误报 2.1% |
-| D 网络大小 | 无隐藏层 / 8 / 64 / 128, 64 | 无隐藏层误报 7.5%；[128, 64] 误报 0.8% |
-| E 过拟合 | 1% 训练行，网络 [256, 128]，150 轮，关掉 early stopping | val loss 第 7 轮最低（0.090），之后升到 0.34；early stopping 回到第 7 轮的权重；weight decay 0.01 最有效（0.075）；dropout 只有一点帮助 |
-| F 梯度消失（补充） | 4 层 sigmoid + SGD | loss 一直卡在 0.33，所有流量都判成攻击 |
+按面板三页分组，每次只在 baseline 上改一处。数字是本机单个 seed 的实测值，完整表格见 notebook Step 9。
+- **Data**：
+  - 不缩放时第一轮 loss 约 45,000；robust 也不稳定；log + standard 最好（val loss 0.0058，误报 0.9%）；
+  - 去掉 proto 和 service 后误报从 1.3% 升到 2.2%；
+  - 攻击欠采样到 1:1 后误报 1.1%，但漏报变多。
+- **Model**：
+  - 无隐藏层时误报 7.5%；[128, 64] 误报 0.8%；
+  - [256, 128] 并不更好；
+  - 数据全量时 dropout 只会让学习变慢；
+  - 4 层 sigmoid + SGD 时 loss 卡在 0.33，所有流量都判成攻击。
+- **Training**：
+  - Adam 的 lr 取 0.00001 时误报 35%，取 0.1 时 val loss 来回跳；
+  - SGD 在 lr 0.001 时误报 35%；lr 0.01 加 momentum 0.9 后 val loss 0.017；lr 0.1 加 momentum 0.9 后 0.0096；
+  - rmsprop 和 Adam 差不多；Adam 的 beta2 改成 0.9 后变差；adagrad 的步长会越来越小。
+- **过拟合（三页一起改）**：只用 1% 训练行（826 行）、网络 [256, 128]、150 轮、patience 0：
+  - val loss 第 7 轮最低（0.106），之后升到 0.31；
+  - patience 5 能保住第 7 轮的权重；weight decay 0.01 效果最好（最后 0.12）；dropout 帮助很小；把训练行增加到 10% 最有效。
 
 结果写进报告时：原文（实验数字）、推断、建议分开写；只跑一个 seed 时，差几行的结果要注明「可能是随机波动」；结论对应 week2/lesson2 的泛化、过拟合、正则化。
 

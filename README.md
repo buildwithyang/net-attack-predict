@@ -23,13 +23,15 @@ in Jupyter or VS Code and run all cells. It reads `data/raw/rt-iot2022.zip` dire
 | --- | --- |
 | 1 | load and clean the data (drop the row counter, remove duplicates, label normal / attack) |
 | 2 | stratified train / validation / test split, 70 / 15 / 15, seed 42 |
-| 3 | one-hot encode `proto` / `service`, scale the numeric features (fitted on train only) |
-| 4 | build the MLP |
-| 5 | hand-written training loop with early stopping |
+| 3 | **data processing**: which training rows (all / a share / undersample attacks), which features (all / drop constant / drop proto + service / drop named columns), scaling (standard / minmax / robust / log + standard / none) |
+| 4 | **model**: the MLP (hidden layers, activation, dropout) |
+| 5 | **training**: optimizers with their own settings (sgd: momentum, nesterov · adam / adamw: beta1, beta2 · rmsprop: alpha, momentum · adagrad), hand-written training loop with early stopping |
 | 6 | test: detection rate, false alarm rate, confusion matrix |
-| 7 | **experiment**: change settings (scaling, network size, activation, dropout, optimizer, learning rate, batch size, epochs, early stopping, weight decay, training rows) |
-| 8 | compare all runs in a table and a chart |
-| 9 | suggested experiments with the results we got |
+| 7 | one experiment = Steps 3 → 6; runs the baseline |
+| 8 | **experiment panel** with Data / Model / Training tabs (the optimizer's own settings appear when you pick it), results table, compare chart |
+| 9 | suggested experiments for each tab, with the results we got |
+
+The three tabs match Steps 3, 4 and 5, so the team can split the work: data processing, model, training.
 
 ## Files
 
