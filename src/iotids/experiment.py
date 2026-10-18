@@ -24,16 +24,24 @@ from .train import fit, predict_proba
 
 def run_experiment(cfg: Mapping[str, Any], out_root: Path) -> Report:
     start = time.time()
-    seed = int(cfg["seed"])
+    seed = int(cfg["seed"])  # one seed drives the split, the starting weights and the shuffling
 
+    # 1. Data: CSV -> train / val / test number arrays (X, y). Scaler etc. are fitted on train only.
     splits = load_splits(cfg["data"], seed)
+    # 2. Model: an untrained MLP whose input size matches the number of feature columns.
     model = build_model(cfg["model"], splits.n_features, seed)
+    # 3. Train: update the weights on train, watch val loss each epoch (early stopping).
+    #    `model` is changed in place; `history` only records the losses.
     history = fit(model, splits.train, splits.val, cfg["train"], seed)
 
+    # 4. Decide: turn "attack probability" into yes/no. The threshold is picked on val, never on test.
     threshold = choose_threshold(predict_proba(model, splits.val.X), splits.val.y, cfg["decision"])
+    # 5. Test: score the test rows once, with the finished model.
     test_scores = predict_proba(model, splits.test.X)
+    # 6. Evaluate: confusion matrix, detection rate, false alarm rate, per attack type.
     report = evaluate(test_scores, splits.test, threshold)
 
+    # 7. Save: everything below only writes files to runs/<name>/.
     out_dir = Path(out_root) / cfg["name"]
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "config.yaml").write_text(yaml.safe_dump(dict(cfg), sort_keys=False))
