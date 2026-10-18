@@ -3,18 +3,24 @@
 Interface:
 
     history = fit(model, splits.train, splits.val, train_cfg, seed)
+    history = fit(..., on_epoch=show)            # optional: show(epoch, history, model) after every epoch
     scores  = predict_proba(model, split.X)      # numpy, values in 0..1
 
 `fit` trains in place. With early stopping on, it stops after `early_stopping`
 epochs without a better val loss and puts back the weights from the epoch with
 the lowest val loss. With early stopping off (0), it trains every epoch and
 keeps the last weights, so you can see what overfitting does to the results.
+`on_epoch` only watches (e.g. the notebook draws live curves); it must not
+change the model.
 
 Config keys (train:):
     epochs          max number of passes over the training set
     batch_size      rows per gradient step
-    optimizer       "adam" or "sgd"
+    optimizer       one of OPTIMIZERS: "adam", "adamw", "sgd", "rmsprop", "adagrad"
     lr              learning rate
+    momentum        (optional, sgd and rmsprop only) e.g. 0.9; default 0 = plain update
+    weight_decay    (optional) L2 penalty on the weights, e.g. 1e-4; default 0 = off
+                    (for adamw it is the decoupled weight decay)
     class_weight    "none", "balanced", or a number: weight of the attack class
                     in the training loss (normal class weight is 1)
     early_stopping  stop after this many epochs without a better val loss
@@ -25,7 +31,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 import numpy as np
 import torch
@@ -34,7 +40,14 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from .data import Split
 
-OPTIMIZERS = {"adam": torch.optim.Adam, "sgd": torch.optim.SGD}
+OPTIMIZERS = {
+    "adam": torch.optim.Adam,
+    "adamw": torch.optim.AdamW,
+    "sgd": torch.optim.SGD,
+    "rmsprop": torch.optim.RMSprop,
+    "adagrad": torch.optim.Adagrad,
+}
+WITH_MOMENTUM = {"sgd", "rmsprop"}  # optimizers that take a `momentum` setting
 
 
 @dataclass
@@ -47,7 +60,14 @@ class History:
     kept_epoch: int = 0  # 1-based epoch whose weights the model ends with
 
 
-def fit(model: nn.Module, train: Split, val: Split, cfg: Mapping[str, Any], seed: int) -> History:
+def fit(
+    model: nn.Module,
+    train: Split,
+    val: Split,
+    cfg: Mapping[str, Any],
+    seed: int,
+    on_epoch: Callable[[int, History, nn.Module], None] | None = None,
+) -> History:
     torch.manual_seed(seed)
     loader = DataLoader(
         TensorDataset(torch.from_numpy(train.X), torch.from_numpy(train.y)),
@@ -81,6 +101,8 @@ def fit(model: nn.Module, train: Split, val: Split, cfg: Mapping[str, Any], seed
             history.best_epoch = epoch
         else:
             waited += 1
+        if on_epoch is not None:
+            on_epoch(epoch, history, model)
         if patience and waited >= patience:
             break
 
@@ -121,4 +143,10 @@ def _optimizer(model: nn.Module, cfg: Mapping[str, Any]) -> torch.optim.Optimize
     name = cfg.get("optimizer", "adam")
     if name not in OPTIMIZERS:
         raise ValueError(f"train.optimizer: unknown {name!r}; choose one of {sorted(OPTIMIZERS)}")
-    return OPTIMIZERS[name](model.parameters(), lr=float(cfg.get("lr", 1e-3)))
+    options = {"lr": float(cfg.get("lr", 1e-3)), "weight_decay": float(cfg.get("weight_decay", 0.0))}
+    momentum = float(cfg.get("momentum", 0.0))
+    if momentum and name not in WITH_MOMENTUM:
+        raise ValueError(f"train.momentum only works with {sorted(WITH_MOMENTUM)}, not {name!r}")
+    if name in WITH_MOMENTUM:
+        options["momentum"] = momentum
+    return OPTIMIZERS[name](model.parameters(), **options)

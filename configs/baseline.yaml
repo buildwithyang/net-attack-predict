@@ -11,7 +11,7 @@ data:
   split: [0.7, 0.15, 0.15]      # train / val / test, stratified by Attack_type
   features: all                 # all | drop_constant | {name: drop, columns: [proto, service]}
   scaler: standard              # none | standard | minmax | robust | log_standard
-  sampler: none                 # none | {name: undersample, ratio: 1.0}   (train set only)
+  sampler: none                 # none | {name: undersample, ratio: 1.0} | {name: subsample, fraction: 0.1}   (train set only)
 
 model:
   hidden: [64]                  # hidden layer sizes, e.g. [128, 64]
@@ -21,8 +21,10 @@ model:
 train:
   epochs: 30
   batch_size: 256
-  optimizer: adam               # adam | sgd
+  optimizer: adam               # adam | adamw | sgd | rmsprop | adagrad
   lr: 0.001
+  # momentum: 0.9               # optional, sgd / rmsprop only (default 0)
+  # weight_decay: 0.0001        # optional L2 penalty (default 0)
   class_weight: none            # none | balanced | a number (weight of the attack class)
   early_stopping: 5             # stop after 5 epochs without a better val loss; 0 = off
 

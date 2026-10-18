@@ -39,6 +39,29 @@ def test_same_seed_same_result():
     assert np.array_equal(predict_proba(a, X), predict_proba(b, X))
 
 
+@pytest.mark.parametrize(
+    "options",
+    [{"optimizer": "sgd", "lr": 0.1, "momentum": 0.9}, {"optimizer": "rmsprop", "lr": 0.01},
+     {"optimizer": "adamw", "weight_decay": 0.01}, {"optimizer": "adagrad", "lr": 0.1}],
+)
+def test_other_optimizers_learn(options):
+    model = build_model({"hidden": [16]}, n_features=5, seed=0)
+    fit(model, toy(800, 1), toy(200, 2), {**CFG, **options}, seed=0)
+    test = toy(500, 3)
+    assert ((predict_proba(model, test.X) >= 0.5) == (test.y == 1)).mean() > 0.95
+
+
+def test_on_epoch_sees_every_epoch():
+    seen = []
+    model = build_model({"hidden": [16]}, n_features=5, seed=0)
+    history = fit(model, toy(800, 1), toy(200, 2), CFG, seed=0,
+                  on_epoch=lambda epoch, h, m: seen.append((epoch, len(h.val_loss))))
+    assert seen == [(e, e) for e in range(1, len(history.val_loss) + 1)]
+
+
 def test_bad_config_fails_early():
     with pytest.raises(ValueError, match="model.activation"):
         build_model({"activation": "swish"}, n_features=5, seed=0)
+    model = build_model({"hidden": [4]}, n_features=5, seed=0)
+    with pytest.raises(ValueError, match="train.momentum"):
+        fit(model, toy(50, 1), toy(20, 2), {**CFG, "momentum": 0.9}, seed=0)

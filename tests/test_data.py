@@ -46,6 +46,14 @@ def test_sampling_changes_train_only(base):
     assert np.array_equal(sampled.test.y, base.test.y)
 
 
+def test_subsample_keeps_every_type_in_proportion(base):
+    small = load_splits({**BASE, "sampler": {"name": "subsample", "fraction": 0.1}}, seed=42)
+    assert abs(len(small.train.y) - 0.1 * len(base.train.y)) <= len(np.unique(base.train.attack_type))
+    assert set(small.train.attack_type) == set(base.train.attack_type)
+    assert set(small.train.row_ids) <= set(base.train.row_ids)
+    assert small.test_fingerprint == base.test_fingerprint
+
+
 def test_scaler_is_fitted_on_train(base):
     n_numeric = sum(not n.startswith(("proto_", "service_")) for n in base.feature_names)
     train = base.train.X[:, :n_numeric]

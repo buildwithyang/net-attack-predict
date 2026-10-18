@@ -216,6 +216,28 @@ class UndersampleAttack:
         return np.sort(np.concatenate([normal_idx, *kept]))
 
 
+class Subsample:
+    """Keep only a share (`fraction`) of the training rows, inside every traffic type.
+
+    Class balance stays as it is. Useful to see overfitting: with few training
+    rows a big network learns them by heart and the val loss starts rising.
+    """
+
+    def __init__(self, fraction: float = 0.1):
+        if not 0 < fraction <= 1:
+            raise ValueError("Subsample: fraction must be in (0, 1]")
+        self.fraction = fraction
+
+    def sample(self, y: np.ndarray, attack_type: np.ndarray, seed: int) -> np.ndarray:
+        rng = np.random.default_rng(seed)
+        kept = []
+        for kind in np.unique(attack_type):
+            rows = np.flatnonzero(attack_type == kind)
+            n_keep = max(1, round(len(rows) * self.fraction))
+            kept.append(rng.choice(rows, size=n_keep, replace=False))
+        return np.sort(np.concatenate(kept))
+
+
 # ---------------------------------------------------------------------------
 # Registries and builders
 # ---------------------------------------------------------------------------
@@ -237,6 +259,7 @@ SCALERS: dict[str, Callable[..., Scaler]] = {
 SAMPLERS: dict[str, Callable[..., Sampler]] = {
     "none": NoSampling,
     "undersample": UndersampleAttack,
+    "subsample": Subsample,
 }
 
 

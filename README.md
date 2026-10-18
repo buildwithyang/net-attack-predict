@@ -27,6 +27,8 @@ The standard "src layout" used by most Python ML projects:
 │   ├── evaluate.py      test numbers: detection rate, false alarm rate, per type
 │   ├── plots.py         the charts
 │   └── experiment.py    train -> validate -> test -> save (the only module that writes files)
+├── notebooks/
+│   └── playground.ipynb interactive: sliders for every setting, live training curves (Colab ready)
 ├── scripts/             command-line entry points: thin, they only call src/
 │   ├── train.py         run one or more configs
 │   ├── compare.py       put several finished runs in one chart + table
@@ -49,6 +51,17 @@ The standard "src layout" used by most Python ML projects:
 
 To start over, delete the `.venv` folder and double-click again. The launcher code is in `scripts/start.py`.
 
+## Try settings interactively (notebook)
+
+[`notebooks/playground.ipynb`](notebooks/playground.ipynb) runs in Google Colab or local Jupyter.
+Change the scaler, network, optimizer (adam / adamw / sgd / rmsprop / adagrad), learning rate,
+momentum, weight decay, batch size, early stopping and threshold with sliders, press **Train**,
+and watch the train / validation loss live. It also compares runs, sweeps one setting, and has
+guided experiments (learning rate, optimizers, scaling, overfitting, vanishing gradients).
+It calls the same `src/iotids` functions as `scripts/train.py`, so the numbers match.
+
+<a href="https://colab.research.google.com/github/buildwithyang/net-attack-predict/blob/main/notebooks/playground.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
 ## Run it
 
 From the project root:
@@ -56,7 +69,7 @@ From the project root:
 ```bash
 pip install -e ".[dev]"                     # once; -e = use src/ directly, edits apply at once
 unzip data/raw/rt-iot2022.zip -d data/raw/  # once
-pytest                                      # 13 checks, about 5 s
+pytest                                      # 19 checks, about 7 s
 python scripts/train.py configs/baseline.yaml   # about 30 s on a laptop CPU
 
 # run all training experiments, then compare one group (reference first)
@@ -108,8 +121,9 @@ same; check `test_fingerprint` in `metrics.json`.
 | Remove noisy features | `data.features` | `all`, `drop_constant`, `{name: drop, columns: [...]}` |
 | Another normalisation | `data.scaler` | `none`, `standard`, `minmax`, `robust`, `log_standard` |
 | Fix class imbalance in data | `data.sampler` | `none`, `{name: undersample, ratio: 1.0}` |
+| Fewer training rows (overfits sooner) | `data.sampler` | `{name: subsample, fraction: 0.1}` |
 | Network size / shape | `model.*` | `hidden`, `activation`, `dropout` |
-| Training settings | `train.*` | `epochs`, `batch_size`, `optimizer`, `lr`, `early_stopping` |
+| Training settings | `train.*` | `epochs`, `batch_size`, `optimizer` (`adam`, `adamw`, `sgd`, `rmsprop`, `adagrad`), `lr`, `momentum`, `weight_decay`, `early_stopping` |
 | Fix class imbalance in loss | `train.class_weight` | `none`, `balanced`, a number |
 | Trade false alarms vs missed attacks | `decision` | `fixed {value}`, `max_fpr {fpr}` |
 

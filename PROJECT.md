@@ -61,6 +61,25 @@
 - 本项目已用 `pip install -e ".[dev]"` 以可编辑方式装进该环境（2026-10-18）。在项目根目录运行：`~/.venvs/dmu-project1/bin/python -B scripts/train.py configs/baseline.yaml`；测试直接 `pytest`。VS Code 终端已设好 `PYTHONDONTWRITEBYTECODE` 和 `MPLCONFIGDIR`，避免在同步目录里生成缓存。
 - 依赖写在 `pyproject.toml`，版本下限按 Colab 能满足的写。
 - 不要两台机器同时跑本项目：同步时文件正被改写会产生 `.conflict1/.conflict2` 副本。
+- 2026-10-18 加了给没编程经验的组员用的启动器：双击 `start.command`（macOS）或 `start.bat`（Windows），代码在 `scripts/start.py`。它在项目根目录建 `.venv/`、装依赖、解压数据，再用菜单选实验、对比、自检。`.venv/` 已写进 `.gitignore`。**Drive 里这份副本不要用启动器**，否则 `.venv`（含 torch，几百 MB）会被同步上云；本机继续用 `~/.venvs/dmu-project1`。组员从 GitHub clone 后再用。
+
+### 交互式 notebook（2026-10-18）
+
+- `notebooks/playground.ipynb`：用滑块调数据处理、网络、optimizer 和训练参数，点 Train 后实时看 train / val loss 曲线，并给出测试集结果（四张图和 `summary.png` 相同）。另外可以对比多次运行、对单个参数做 sweep，还附带一份「引导实验」清单。用户要求：Colab 能跑，能交互式调超参数和 optimizer，看到效果。
+- notebook 不另写模型或训练循环，直接调用 `src/iotids`。同配置、同 seed 和命令行结果一致：本机核对过 baseline，测试集 fp=20、fn=33，与 `runs/baseline/metrics.json` 相同。
+- 为此给库加了以下功能，旧配置照常能用：
+  - `train.optimizer` 新增 `adamw`、`rmsprop`、`adagrad`；
+  - 新增可选的 `train.momentum`（sgd、rmsprop）和 `train.weight_decay`；
+  - `fit(..., on_epoch=...)` 回调，用来画实时曲线；
+  - `data.sampler` 新增 `{name: subsample, fraction: 0.01}`，只用一部分训练行，用来故意做出过拟合。
+  - 对应测试共 19 个，全部通过。
+- Colab 里的 setup 单元会从 GitHub clone 仓库，所以 Colab 徽章和 clone 都要等这些改动 push 之后才生效。
+- 引导实验里的数字来自 2026-10-18 本机 CPU、seed 42 的单次运行。**推断**：换机器或换 torch 版本，末位可能不同。几个值得写进报告的观察（原文数字见 notebook 第 6 节）：
+  - 不做标准化时，第一轮 train loss 约 44,000；
+  - SGD 在 lr 0.001 下 30 轮后误报 35%，而 Adam 只有 1.1%；
+  - 全量数据下这个 MLP 几乎不过拟合；只用 1%（828 行）训练、网络取 [256, 128] 时，val loss 在第 20 轮最低（0.066），之后升到 0.25；
+  - 在这个设置下，weight decay 0.01 能把最后的 val loss 压到 0.077，dropout 0.3 / 0.5 几乎没用；
+  - 4 层 sigmoid + SGD 时 loss 卡在 0.33，模型把所有流量都判成攻击。
 
 ## 为什么可以不用 KDD
 
@@ -121,13 +140,14 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 
 - 组员名单。
 - 正常 / 攻击标签的归类（见上方推断）。
-- 交给老师的代码形式：assessment.md 推断 Colab `.ipynb` 最贴合老师习惯；现在是 `.py` 模块，需要时再加一个调用这些模块的 notebook。
+- 交给老师的代码形式：assessment.md 推断 Colab `.ipynb` 最贴合老师习惯。现在已有调用模块的 `notebooks/playground.ipynb`（交互式），是否直接作为提交形式待定。
 
 ## 文件
 
 2026-10-18 按 Python 机器学习项目常用的 src 布局整理（用户要求），代码从 `code/` 提到项目根目录。每个目录的作用见 [README.md](README.md) 的 "Project layout"。
 
 - `README.md`、`pyproject.toml`、`configs/`、`src/iotids/`、`scripts/`、`tests/` —— 代码部分（标准布局）
+- `notebooks/playground.ipynb` —— 交互式调参 notebook（Colab / Jupyter），见上方「交互式 notebook」
 - `data/raw/rt-iot2022.zip` —— 数据集原始压缩包（原样保留）；解压出的 CSV 可以随时重建
 - `runs/<name>/` —— 每个实验的结果和图表，由 `scripts/train.py` 生成（目前已清空）
 - `.gitignore` —— 列出可重新生成、不该提交的文件
