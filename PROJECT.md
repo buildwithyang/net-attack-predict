@@ -63,6 +63,19 @@
 - 不要两台机器同时跑本项目：同步时文件正被改写会产生 `.conflict1/.conflict2` 副本。
 - 2026-10-18 加了给没编程经验的组员用的启动器：双击 `start.command`（macOS）或 `start.bat`（Windows），代码在 `scripts/start.py`。它在项目根目录建 `.venv/`、装依赖、解压数据，再用菜单选实验、对比、自检。`.venv/` 已写进 `.gitignore`。**Drive 里这份副本不要用启动器**，否则 `.venv`（含 torch，几百 MB）会被同步上云；本机继续用 `~/.venvs/dmu-project1`。组员从 GitHub clone 后再用。
 
+### 精简版 notebook（2026-10-18，主用）
+
+- 用户要求：项目只剩 5 天左右，有组员没有编程经验。要精简、紧扣课堂内容，让每个人打开 notebook 就能看懂数据处理、训练、验证、调优的全过程。
+- `notebooks/iot_attack_detection.ipynb`：**自包含**，不 import `src/`，约 200 行代码，按 Step 0–9 组织：
+  - 数据部分：读数据、清洗、划分、one-hot 和缩放；
+  - 模型与评估：MLP、手写训练循环（含 early stopping）、混淆矩阵；
+  - 实验与对比：Step 7 用 Colab 表单（`# @param`）调 12 个设置，Step 8 对比各次运行，Step 9 是推荐实验和实测数字。
+  - 每一步都注明对应哪节课（week1 感知机 / 反向传播，week2 泛化、过拟合、early stopping、dropout、归一化）。
+- 数据：先找项目里的 `data/raw/rt-iot2022.zip`，没有就从 GitHub 下载。清洗和划分方式与 `src/iotids` 一致：去重后 117,922 行，按 Attack_type 分层 70/15/15，seed 42。
+- 结果数字和 `src/iotids` 不完全一样：每轮打乱数据的方式不同，one-hot 的做法也不同。baseline 实测：best val loss 0.0076，攻击检出 99.84%，误报 1.28%（本机 CPU，2026-10-18）。
+- 本机执行过整份 notebook，并跑了 Step 9 列出的全部实验，数字都是实测值。**未在 Colab 上实测。**
+- **建议**：小组提交和 demo 用这一份。`src/iotids` 和 `playground.ipynb` 作为进阶 / 备份，是否保留待用户决定。
+
 ### 交互式 notebook（2026-10-18）
 
 - `notebooks/playground.ipynb`：用滑块调数据处理、网络、optimizer 和训练参数，点 Train 后实时看 train / val loss 曲线，并给出测试集结果（四张图和 `summary.png` 相同）。另外可以对比多次运行、对单个参数做 sweep，还附带一份「引导实验」清单。用户要求：Colab 能跑，能交互式调超参数和 optimizer，看到效果。

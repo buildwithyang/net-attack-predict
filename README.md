@@ -28,7 +28,8 @@ The standard "src layout" used by most Python ML projects:
 │   ├── plots.py         the charts
 │   └── experiment.py    train -> validate -> test -> save (the only module that writes files)
 ├── notebooks/
-│   └── playground.ipynb interactive: sliders for every setting, live training curves (Colab ready)
+│   ├── iot_attack_detection.ipynb  START HERE: the whole project in one simple notebook (Colab)
+│   └── playground.ipynb  advanced: every setting of src/iotids with sliders and live curves
 ├── scripts/             command-line entry points: thin, they only call src/
 │   ├── train.py         run one or more configs
 │   ├── compare.py       put several finished runs in one chart + table
@@ -51,7 +52,18 @@ The standard "src layout" used by most Python ML projects:
 
 To start over, delete the `.venv` folder and double-click again. The launcher code is in `scripts/start.py`.
 
-## Try settings interactively (notebook)
+## Start here: one simple notebook
+
+[`notebooks/iot_attack_detection.ipynb`](notebooks/iot_attack_detection.ipynb) is the whole project in
+one file, about 200 lines of code, no imports from `src/`. Open it in Colab, *Runtime → Run all*. It walks
+through load → clean → split → scale → MLP → training loop → test, then lets you change a few
+settings (scaling, network size, activation, dropout, optimizer, learning rate, batch size, epochs,
+early stopping, weight decay, training rows) and compare runs. Step 9 lists suggested experiments with
+the results we got.
+
+<a href="https://colab.research.google.com/github/buildwithyang/net-attack-predict/blob/main/notebooks/iot_attack_detection.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+## Advanced: the playground notebook
 
 [`notebooks/playground.ipynb`](notebooks/playground.ipynb) runs in Google Colab or local Jupyter.
 Change the scaler, network, optimizer (adam / adamw / sgd / rmsprop / adagrad), learning rate,
