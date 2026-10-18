@@ -29,13 +29,25 @@ The standard "src layout" used by most Python ML projects:
 │   └── experiment.py    train -> validate -> test -> save (the only module that writes files)
 ├── scripts/             command-line entry points: thin, they only call src/
 │   ├── train.py         run one or more configs
-│   └── compare.py       put several finished runs in one chart + table
+│   ├── compare.py       put several finished runs in one chart + table
+│   └── start.py         beginner menu behind start.command / start.bat
 ├── tests/               checks each module through its interface
 └── runs/                outputs, one folder per experiment (generated, safe to delete)
 ```
 
 `src/` is code you import; `scripts/` is code you run. `data/raw/` and
 `configs/` are inputs; `runs/` is output. Anything in `.gitignore` can be rebuilt.
+
+## Easiest way: the launcher (no programming needed)
+
+1. Install Python 3.12 from <https://www.python.org/downloads/> (Windows: tick "Add python.exe to PATH").
+2. Double-click **`start.command`** (macOS) or **`start.bat`** (Windows) in this folder.
+   On macOS, if it says "cannot be opened", right-click it → Open. Or in Terminal: `bash start.command`.
+3. The first time, it creates a private Python environment in `.venv/` and installs the
+   packages (a few hundred MB, 1–10 minutes). After that it starts in seconds.
+4. Pick from the menu: run the baseline, pick experiments, compare runs, open the results.
+
+To start over, delete the `.venv` folder and double-click again. The launcher code is in `scripts/start.py`.
 
 ## Run it
 
