@@ -1,5 +1,23 @@
-# Generated: can always be rebuilt, so never commit it
+# Generated files: they can always be rebuilt, so never commit them.
+
+# Data unzipped from data/raw/rt-iot2022.zip
 data/raw/*.csv
+
+# Python / Jupyter
 __pycache__/
 .ipynb_checkpoints/
+.venv/
+
+# Presentation build (notes/presentation-*/.build): keep the scripts, ignore what they produce
+# (node_modules, slide renders, WPS screenshots, candidate .pptx files, check reports).
+node_modules
+**/.build/*
+!**/.build/*.mjs
+!**/.build/*.py
+
+# Office / WPS lock files while a document is open
+~$*
+.~lock.*#
+
+# macOS
 .DS_Store
