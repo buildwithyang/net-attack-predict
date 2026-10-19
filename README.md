@@ -47,7 +47,8 @@ sources/                               the coursework specification
   (`RT_IOT2022.csv`, 123,117 rows, 85 columns).
 - Column `no` restarts at 0 for every attack type, so it is dropped. 5,195 duplicate rows are removed
   before splitting; 117,922 rows remain.
-- **Assumption**: `Thing_Speak`, `MQTT_Publish`, `Wipro_bulb` are normal traffic; all other types are
-  attacks. Not yet checked against the dataset paper.
+- `Thing_Speak`, `MQTT_Publish`, `Wipro_bulb` are normal IoT device traffic; all other types are attacks.
+  This matches the [UCI dataset page](https://archive.ics.uci.edu/dataset/942/rt-iot2022).
+- Dataset paper: Sharmila, B.S. and Nagapadma, R. (2023), *Cybersecurity* 6, doi:10.1186/s42400-023-00178-5.
 - About 90% of rows are attacks, so accuracy alone is misleading; we report the detection rate and the
   false alarm rate.

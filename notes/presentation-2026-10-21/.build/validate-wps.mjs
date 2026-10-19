@@ -1,0 +1,11 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const skill='/Users/yuhaiyang/.codex/plugins/cache/openai-primary-runtime/presentations/26.1017.11052/skills/presentations';
+const {finalizePresentation}=await import(path.join(skill,'container_tools/artifact_tool_utils.mjs'));
+const finalPath=path.join(root,'output/yang-iot-presentation-wps.pptx');
+const candidatePath=path.join(root,'.build/wps-final-candidate.pptx');
+await fs.copyFile(finalPath,candidatePath);
+await finalizePresentation({workspaceDir:root,candidatePath,finalPath:path.join(root,".build/validated/wps-validated.pptx"),pythonExecutable:'/Users/yuhaiyang/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3',integrityValidatorPath:path.join(skill,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-bullet-geometry','--validate-heading-fit',...[2,3,6,7,12,14].flatMap(n=>['--require-native-table-slide',String(n)])],explicitTotalSlideCount:16,requiredNativeTableOwnerSlides:[2,3,6,7,12,14],fontPolicy:{basis:'design',families:['Arial','Courier New']},verifyArtifactToolImport:true,receiptPath:path.join(root,'.build/wps-validation.json')});
+console.log('WPS final file passed validation');

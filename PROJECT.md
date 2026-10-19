@@ -1,6 +1,6 @@
 # net-attack-predict —— 小组项目：物联网网络攻击检测
 
-领域：study / DMU ｜ 状态：单个 notebook 完成，本机已跑通，Colab 未实测 ｜ 最后更新：2026-10-18
+领域：study / DMU ｜ 状态：单个 notebook 完成，本机和 Colab 都已跑通 ｜ 最后更新：2026-10-18
 
 本课程（CSIP5103 / CSIP5103D）的小组项目。考核比重、硬要求和日期以上级目录的 [assessment.md](../assessment.md) 为准，本文件只记本项目自己的决定。
 
@@ -56,7 +56,7 @@
 - 分工（用户 2026-10-18）：Data 页给研究数据处理的同学，Model 页给同学 2，Training 页（optimizer 和调参）由用户本人负责。组员名单仍待补。
 - 2026-10-18 起不再用 Colab 表单（`# @param`），原因有两个：表单把下拉选项 `0.0` / `1.0` 显示成 `0` / `1`，和默认值对不上而报错；表单也做不到「选了哪个 optimizer 才显示它的参数」。
 - baseline（隐藏层 64、标准化、Adam lr 0.001、batch 256、最多 30 轮、early stopping 5）的实测结果：best val loss 0.0076，攻击检出 99.84%，误报 1.28%。环境是本机 CPU，2026-10-18。
-- 本机执行过整份 notebook，Step 9 列的实验也全部跑过，数字都是实测值。**未在 Colab 上实测**。用户在 Colab 上跑旧版代码时，末位数字和本机略有不同，**推断**是 CPU 和 torch 版本不同造成的。
+- 本机执行过整份 notebook，Step 9 列的实验也全部跑过，数字都是实测值。Colab 已测试通过（用户 2026-10-18 确认）。用户在 Colab 上跑旧版代码时，末位数字和本机略有不同，**推断**是 CPU 和 torch 版本不同造成的。
 
 ### 课上讲过哪些 optimizer（2026-10-18 查课程资料）
 
@@ -118,9 +118,17 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 - **RT-IoT2022**，Kaggle：<https://www.kaggle.com/datasets/supplejade/rt-iot2022real-time-internet-of-things>，2026-10-16 下载。
 - `data/raw/rt-iot2022.zip`（← 原 `data/rt-iot2022.zip`，2026-10-18 按标准目录移入 `raw/`）：原始压缩包，3.8 MB。解压得到 `data/raw/RT_IOT2022.csv`（55 MB，123,117 行不含表头，85 列；第一列 `no` 是行号，最后一列 `Attack_type` 是标签，其余是流量特征）。notebook 直接读压缩包，不需要解压。
 
+数据集原论文（2026-10-18 网上查到，标题、作者、期刊、DOI 已核对搜索结果和 UCI 页面）：
+
+- Sharmila, B.S. and Nagapadma, R. (2023) 'Quantized autoencoder (QAE) intrusion detection system for anomaly detection in resource-constrained IoT devices using RT-IoT2022 dataset', *Cybersecurity*, 6. doi:10.1186/s42400-023-00178-5.（文章编号未核对，引用前到论文页确认。）
+- 内容：用自编码器（无监督异常检测）加剪枝、聚类、整数量化，让模型能在资源受限的 IoT 边缘设备上运行。据搜索结果摘要，未量化的自编码器准确率 98.40%，QAE-u8 为 96.35%（论文 Table 7；未打开原文核对）。
+- 数据集本身也有 DOI：10.24432/C5P338（UCI，CC BY 4.0）。采集方式：Zeek + Flowmeter 插件抓双向流，123,117 条、83 个特征。
+
+**建议**：presentation 和报告里可以拿它对比——原论文用无监督自编码器、关注设备资源；我们用有监督 MLP、关注训练方法和误报率。
+
 各标签行数（2026-10-16 统计）：
 
-| Attack_type | 行数 | 推断归类 |
+| Attack_type | 行数 | 归类 |
 | --- | ---: | --- |
 | DOS_SYN_Hping | 94,659 | 攻击 |
 | Thing_Speak | 8,108 | 正常 |
@@ -135,7 +143,7 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 | Metasploit_Brute_Force_SSH | 37 | 攻击 |
 | NMAP_FIN_SCAN | 28 | 攻击 |
 
-**推断**：Thing_Speak、MQTT_Publish、Wipro_bulb 看名字是正常设备流量，其余是攻击。这个归类还没对照 Kaggle 页面或原论文核实。照这个归类，正常 12,507 行（10.2%），攻击 110,610 行（89.8%），单是 DOS_SYN_Hping 就占 76.9%。
+**归类已核实（2026-10-18）**：UCI 数据集页面 <https://archive.ics.uci.edu/dataset/942/rt-iot2022> 写明正常流量来自 ThingSpeak-LED、Wipro-Bulb、MQTT-Temp、Amazon Alexa 等 IoT 设备，攻击是 Hping SYN DoS、Slowloris DDoS、Metasploit SSH 暴力破解、ARP 欺骗和多种 Nmap 扫描。所以 Thing_Speak、MQTT_Publish、Wipro_bulb 为正常、其余为攻击，与 notebook 一致。Amazon Alexa 在本 CSV 的标签里没有出现。按此归类，正常 12,507 行（10.2%），攻击 110,610 行（89.8%），单是 DOS_SYN_Hping 就占 76.9%。
 
 **建议**：攻击占了绝大多数，全猜「攻击」准确率也有约 90%。所以报告不要只报 accuracy，要报正常流量误报率、各类检出率和混淆矩阵，并考虑类别权重或重采样。
 
@@ -146,7 +154,7 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 - **每个组员都要单独准备、单独讲自己的 presentation**："Each group member must prepare and deliver their own presentation"。项目数据和实验结果可以共用。
 - 必须覆盖：问题和数据集简介；方法概述；用自己的方式说明本人对项目的贡献；主要结果；收获和教训。
 - 10–15 分钟，多用图表，术语讲浅，最后给一段简短反思或下一步，不要照着念。
-- 页面写的是 "Due on 11 November 2025 11:59 AM"，比现在早一年，推断是旧学期的设置没改。本次以用户确认的 2026-10-27 为准，见 [assessment.md](../assessment.md)。
+- 页面写的是 "Due on 11 November 2025 11:59 AM"，比现在早一年，推断是旧学期的设置没改。2026-10-27 是小组 report 的截止日（用户 2026-10-18 确认），不是 presentation 日期；presentation 是 **2026-10-21（周三）**（用户 2026-10-18 确认），见 [assessment.md](../assessment.md)。
 
 **建议**的 PPT 结构（约 9 页、12 分钟）：题目与目标 → 实际问题（误报和漏报）→ 数据集 → 数据处理与训练 / 验证 / 测试划分 → 网络结构与训练方法 → 对比实验 → 结果（训练曲线、指标表、混淆矩阵）→ 个人贡献与收获 → 结论、局限与下一步。
 
@@ -156,12 +164,12 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 
 | 组员 | 做了什么 | 证据（文件 / 提交） |
 | --- | --- | --- |
-| （待填） | | |
+| 用户本人 | 组织并实现整个项目代码（notebook Step 0–9、实验面板）；主导 Training 页实验（optimizer、learning rate、过拟合）；其余各部分也基本清楚（用户 2026-10-18） | `notebooks/iot_attack_detection.ipynb`、git 提交历史 |
+| （其他组员待填） | | |
 
 ## 待确认
 
 - 组员名单。
-- 正常 / 攻击标签的归类（见上方推断）。
 - 交给老师的代码形式：assessment.md 推断 Colab `.ipynb` 最贴合老师习惯。**建议**直接提交 `notebooks/iot_attack_detection.ipynb`，待用户确认。
 
 ## 文件
@@ -172,3 +180,10 @@ Word 作业说明原件已于 2026-10-17 存入 `sources/NNS_report_instruction.
 - `.gitignore` —— 不该提交的文件
 - `.vscode/settings.json` —— VS Code 配置：解释器指向 `~/.venvs/dmu-project1`，终端不在同步目录里生成缓存
 - `PROJECT.md`、`sources/` —— 资料库约定：项目决定记录，课程原件（`sources/NNS_report_instruction.docx`，2026-10-17 存入）
+
+
+## 2026-10-18 个人 PPT 制作
+
+- 用户要求使用 WPS；沿用 `notes/presentation-plan.md` 的 12 页正文结构，另有 4 页备用页，正文讲解预算 11 分 55 秒，备注只写关键词。
+- 实测：已从当前 Colab 导出 10 组实验，baseline 攻击检出 99.84%、正常误报 1.16%，编码后输入 94 维。PPT 使用这些数值，完整证据和文件见 [制作目录](notes/presentation-2026-10-21/README.md)。
+- 2026-10-19：已在 WPS 完成保存和全部 16 页放映、16 页备注检查；修复备注页布局和模板字体。最终文件为 `notes/presentation-2026-10-21/output/yang-iot-presentation-wps.pptx`。正文和备注文字保留完整，结构、字体与重新导入检查通过。尚未计时排练、未提交。
